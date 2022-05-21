@@ -8,14 +8,18 @@ import java.io.IOException;
 import java.net.Socket;
 
 public class ClientHandler {
+    private final long TIMEOUT = 2;
 
     private Socket socket;
     private MyServer myServer;
     private DataInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
     private String nick;
+    private long birthTime;
+    private Thread thread;
 
     public ClientHandler(MyServer myServer, Socket socket) {
+        birthTime -= System.currentTimeMillis();
         try {
             this.myServer = myServer;
             this.socket = socket;
@@ -53,6 +57,11 @@ public class ClientHandler {
     private void authentication() {
         while (true) {
             try {
+                if(System.currentTimeMillis() - birthTime > 1000 * TIMEOUT){
+                    thread.interrupt();
+                    socket.close();
+                    return;
+                }
                 AuthMessage message = new Gson().fromJson(dataInputStream.readUTF(), AuthMessage.class);
                 String nick = myServer.getAuthService().getNickByLoginAndPass(message.getLogin(), message.getPassword());
                 if (nick != null && !myServer.isNickBusy(nick)) {
